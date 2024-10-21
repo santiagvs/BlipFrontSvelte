@@ -11,8 +11,8 @@
       contacts = response.data;
     };
 
-    const changeAmount = (e: any) => {
-        amount = +e.target.value;
+    const changeAmount = (e: Event) => {
+        amount = +(e.target as HTMLSelectElement).value;
         loadContacts();
     };
 
