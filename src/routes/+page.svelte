@@ -1,17 +1,7 @@
 <script lang="ts">
     import axios from 'axios';
     import { onMount } from 'svelte';
-    import "../app.css";
-
-    interface Contact {
-        identity: string;
-        name: string;
-        group: string;
-        lastMessageDate: string;
-        lastUpdateDate: string;
-        gender: string;
-        extras: {}
-    }
+    import { type Contact } from '$lib/index';
 
     let contacts: Contact[] = [];
     let amount = 10;
@@ -24,13 +14,12 @@
     const changeAmount = (e: any) => {
         amount = +e.target.value;
         loadContacts();
-
     };
 
     onMount(loadContacts);
 </script>
 
-<main class="p-6">
+<main class="p-28">
     <header class="flex flex-row justify-between items-center">
         <h1 class="text-3xl">Contatos</h1>
         <select class="p-3 mt-4 rounded-md bg-amber-400" on:change={(e) => { changeAmount(e) }}>
@@ -50,3 +39,9 @@
         {/each}
     </ul>
 </main>
+
+<style>
+    select {
+        border-right: 12px solid transparent
+    }
+</style>

@@ -2,57 +2,97 @@
     import axios from 'axios';
     import { onMount } from 'svelte';
     import { page } from '$app/stores';
-    import "../../../app.css";
-
-    interface Message {
-        content: string;
-        id: string;
-        from: string;
-        to: string;
-        metadata: {
-            "#date_processed": string;
-            "date_created": string;
-        };
-    }
-
-    interface Contact {
-        identity: string;
-        name: string;
-        group: string;
-        lastMessageDate: string;
-        lastUpdateDate: string;
-        gender: string;
-        extras: {}
-    }
+    import { type Message, type Contact, formatDate } from '$lib/index';
 
     let messages: Message[] = [];
+    let newMessage = "";
     let contactId: string = $page.params.id;
     let contact: Contact;
+    let error = "";
+    let isLoading = true;
 
     const loadMessages = async () => {
-      const response = await axios.get(`http://localhost:5000/messages/get-message`);
-      messages = response.data as Message[];
+        isLoading = true;
+
+        try {
+            const response = await axios.get(`http://localhost:5000/messages/get-message/${contactId}`);
+
+            messages = response.data as Message[];
+            messages = messages.reverse();
+
+            isLoading = false;
+        } catch (err: any) {
+            if (err.response.status === 404) {
+                const data = err.response.data as { message: string };
+                error = data.message;
+            } else {
+                error = "Erro ao carregar mensagens";
+            }
+
+            isLoading = false;
+        }
     };
 
     const loadContactById = async () => {
-      const response = await axios.get(`http://localhost:5000/contacts/get-contact/${contactId}`);
-      contact = response.data as Contact;
+        const response = await axios.get(`http://localhost:5000/contacts/get-contact/${contactId}`);
+        contact = response.data as Contact;
     };
 
-    onMount(loadMessages);
-    onMount(loadContactById);
+    const sendMessage = async () => {
+        if (newMessage.trim() === "") return;
+
+        try {
+            const messagePayload = {
+                to: contact.identity,
+                content: newMessage,
+                type: "text/plain"
+            };
+            await axios.post(`http://localhost:5000/messages/send-message`, messagePayload);
+            newMessage = "";
+            loadMessages();
+        } catch (error) {
+            console.error("Erro ao enviar mensagem", error);
+        }
+    };
+
+    onMount(() => {
+        loadMessages();
+        loadContactById();
+    });
 </script>
 
-<main class="p-6">
-    {#if contact}
+<main class="p-28">
+    <a href="/" class="text-blue-500 mb-4 inline-block">Voltar</a>
+
+    {#if isLoading}
+        <p class="italic">Carregando...</p>
+    {/if}
+
+    {#if contact && !isLoading}
         <h1 class="text-3xl">Conversa com {contact.name}</h1>
         <ul>
             {#each messages as message}
                 <li class="p-4 border-b">
                     <p>{message.content}</p>
-                    <small class="text-gray-500">{message.metadata["#date_processed"]}</small>
+                    <small class="text-gray-500">{formatDate(message.metadata["#date_processed"])}</small>
+                    <small class="text-gray-500 bold">{message.from.replace(/(\/.*)/, "")}</small>
+                    {#if error}
+                        <p class="text-red-500 bold">{error}</p>
+                    {/if}
                 </li>
             {/each}
         </ul>
+
+        <div class="mt-4">
+            <input
+                type="text"
+                placeholder="Digite sua mensagem..."
+                class="border p-3 w-full rounded-md"
+                bind:value={newMessage}
+            />
+            <button on:click={sendMessage} class="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md">
+                Enviar
+            </button>
+        </div>
     {/if}
 </main>
