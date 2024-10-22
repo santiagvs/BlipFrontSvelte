@@ -1,13 +1,14 @@
 <script lang="ts">
     import axios from 'axios';
     import { goto } from '$app/navigation';
+	import { apiKeyStore } from '$lib/apiKeyStore';
+
 
     let apiKey = '';
     let error = '';
-    let res: string;
 
-    axios.get('http://localhost:5000/').then((response: { data: any }) => {
-        res = response.data.message;
+    apiKeyStore.subscribe((value) => {
+        apiKey = value;
     });
 
     const login = async () => {
@@ -15,6 +16,8 @@
             await axios.post('http://localhost:5000/login', {
                 key: apiKey,
             });
+
+            apiKeyStore.set(apiKey);
 
             goto('/');
         } catch (err) {
