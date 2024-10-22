@@ -1,17 +1,17 @@
-import { goto } from "$app/navigation";
-import axios from "axios";
-import { apiKeyStore } from "./apiKeyStore";
+import { goto } from '$app/navigation';
+import axios from 'axios';
+import { apiKeyStore } from './apiKeyStore';
 
 export const logout = async () => {
-    let apiKey = '';
+	let apiKey = '';
 
-    apiKeyStore.subscribe((value) => {
-        apiKey = value;
-    });
+	apiKeyStore.subscribe((value) => {
+		apiKey = value;
+	});
 
-    await axios.post('http://localhost:5000/logout', { apiKey: apiKey });
+	await axios.post('http://localhost:5000/logout', { apiKey: apiKey });
 
-    apiKeyStore.set('');
+	apiKeyStore.set('');
 
-    goto('/login');
+	goto('/login');
 };
