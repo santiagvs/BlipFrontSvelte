@@ -12,16 +12,14 @@
 	let contact: Contact;
 	let error = '';
 	let isLoading = true;
-
+	let isSendingMessage = false;
 
 	const loadMessages = async () => {
 		isLoading = true;
 
 		const response = await axios.get(`http://localhost:5000/messages/get-message/${contactId}`);
-
 		const loadedMessages = response.data as Message[];
 		messages = loadedMessages.reverse();
-
 		messageStore.set(messages);
 
 		isLoading = false;
@@ -35,6 +33,8 @@
 	const sendMessage = async () => {
 		if (newMessage.trim() === '') return;
 
+		isSendingMessage = true;
+
 		try {
 			const messagePayload = {
 				to: contact.identity,
@@ -44,9 +44,11 @@
 			await axios.post(`http://localhost:5000/messages/send-message`, messagePayload);
 			newMessage = '';
 
-			loadMessages();
+			await loadMessages();
 		} catch (error) {
 			console.error('Erro ao enviar mensagem', error);
+		} finally {
+			isSendingMessage = false;
 		}
 	};
 
@@ -69,7 +71,7 @@
 		<a href="/" class="text-blue-500 mb-4 inline-block">Voltar</a>
 
 		{#if isLoading}
-			<p class="italic">Carregando...</p>
+			<p class="italic">Carregando mensagens...</p>
 		{/if}
 		{#if contact && !isLoading}
 			<h1 class="text-3xl">Conversa com {contact.name}</h1>
@@ -100,9 +102,20 @@
 				<button
 					on:click={sendMessage}
 					class="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md"
+					disabled={isSendingMessage}
 				>
-					Enviar
+					{#if isSendingMessage}
+						Enviando...
+					{:else}
+						Enviar
+					{/if}
 				</button>
+
+				{#if isSendingMessage}
+					<div class="mt-2">
+						<p class="italic">Enviando mensagem...</p>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	{:else}
