@@ -1,9 +1,10 @@
 <script lang="ts">
 	import axios from 'axios';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { type Message, type Contact, formatDate } from '$lib/index';
 	import { apiKeyStore } from '$lib/apiKeyStore';
+	import { messageStore } from '$lib/messageStore';
 
 	let messages: Message[] = [];
 	let newMessage = '';
@@ -12,13 +13,16 @@
 	let error = '';
 	let isLoading = true;
 
+
 	const loadMessages = async () => {
 		isLoading = true;
 
 		const response = await axios.get(`http://localhost:5000/messages/get-message/${contactId}`);
 
-		messages = response.data as Message[];
-		messages = messages.reverse();
+		const loadedMessages = response.data as Message[];
+		messages = loadedMessages.reverse();
+
+		messageStore.set(messages);
 
 		isLoading = false;
 	};
@@ -39,15 +43,24 @@
 			};
 			await axios.post(`http://localhost:5000/messages/send-message`, messagePayload);
 			newMessage = '';
+
 			loadMessages();
 		} catch (error) {
 			console.error('Erro ao enviar mensagem', error);
 		}
 	};
 
+	const unsubscribe = messageStore.subscribe((storeMessages) => {
+		messages = storeMessages;
+	});
+
 	onMount(() => {
 		loadMessages();
 		loadContactById();
+	});
+
+	onDestroy(() => {
+		unsubscribe();
 	});
 </script>
 
